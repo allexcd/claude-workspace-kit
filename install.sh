@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
 
-# claude-workflow-kit installer
+# claude-kit installer
 # Usage (from your project directory):
 #   bash <path-to-cloned-kit>/install.sh [--force] [--git-exclude|--gitignore|--git-track]
 
@@ -56,8 +56,8 @@ installed=0
 skipped=0
 
 echo ""
-echo "  claude-workflow-kit installer"
-echo "  ============================="
+echo "  claude-kit installer"
+echo "  ===================="
 echo ""
 
 for file in "${KIT_FILES[@]}"; do
@@ -178,11 +178,11 @@ if [ "$GIT_MODE" = "track" ]; then
     _branch=$(git -C "$TARGET_DIR" rev-parse --abbrev-ref HEAD 2>/dev/null || echo "")
     if [[ "$_branch" == "main" || "$_branch" == "master" ]]; then
       echo "  You're on '${_branch}'. Create a feature branch? [y/N]"
-      echo "  Suggested: chore/add-claude-workflow-kit"
+      echo "  Suggested: chore/add-claude-kit"
       read -r _branch_resp || true
       if [[ "${_branch_resp:-}" =~ ^[Yy]$ ]]; then
-        read -r -p "  Branch name [chore/add-claude-workflow-kit]: " _branch_name || true
-        git -C "$TARGET_DIR" checkout -b "${_branch_name:-chore/add-claude-workflow-kit}"
+        read -r -p "  Branch name [chore/add-claude-kit]: " _branch_name || true
+        git -C "$TARGET_DIR" checkout -b "${_branch_name:-chore/add-claude-kit}"
         echo ""
       fi
     fi
