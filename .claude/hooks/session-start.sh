@@ -1,5 +1,5 @@
 #!/bin/bash
-# SessionStart hook for claude-devkit.
+# SessionStart hook for claude-workspace-kit.
 # Surfaces tasks/lessons.md and open tasks/todo.md items at session start
 # so Claude reviews prior corrections before beginning new work (§3).
 #

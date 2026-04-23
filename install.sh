@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
 
-# claude-devkit installer
+# claude-workspace-kit installer
 # Usage (from your project directory):
 #   bash <path-to-cloned-kit>/install.sh [--force] [--git-exclude|--gitignore|--git-track]
 
@@ -56,7 +56,7 @@ installed=0
 skipped=0
 
 echo ""
-echo "  claude-devkit installer"
+echo "  claude-workspace-kit installer"
 echo "  ===================="
 echo ""
 
@@ -170,19 +170,19 @@ if [ "$GIT_MODE" = "track" ]; then
   if [ "$_do_commit" -eq 1 ]; then
     _last=$(git -C "$TARGET_DIR" log --format="%s" -1 2>/dev/null || echo "")
     if echo "$_last" | grep -qE '^[a-z]+(\(.+\))?: '; then
-      _default_msg="chore: add claude devkit"
+      _default_msg="chore: add claude workspace kit"
     else
-      _default_msg="Add claude devkit"
+      _default_msg="Add claude workspace kit"
     fi
 
     _branch=$(git -C "$TARGET_DIR" rev-parse --abbrev-ref HEAD 2>/dev/null || echo "")
     if [[ "$_branch" == "main" || "$_branch" == "master" ]]; then
       echo "  You're on '${_branch}'. Create a feature branch? [y/N]"
-      echo "  Suggested: chore/add-claude-devkit"
+      echo "  Suggested: chore/add-claude-workspace-kit"
       read -r _branch_resp || true
       if [[ "${_branch_resp:-}" =~ ^[Yy]$ ]]; then
-        read -r -p "  Branch name [chore/add-claude-devkit]: " _branch_name || true
-        git -C "$TARGET_DIR" checkout -b "${_branch_name:-chore/add-claude-devkit}"
+        read -r -p "  Branch name [chore/add-claude-workspace-kit]: " _branch_name || true
+        git -C "$TARGET_DIR" checkout -b "${_branch_name:-chore/add-claude-workspace-kit}"
         echo ""
       fi
     fi
