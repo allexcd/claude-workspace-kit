@@ -1,0 +1,41 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "permissions": {
+    "allow": [
+      "Bash(git status)",
+      "Bash(git diff*)",
+      "Bash(git log*)",
+      "Bash(git show*)",
+      "Bash(git branch*)",
+      "Bash(npm run *)",
+      "Bash(pnpm run *)",
+      "Bash(yarn *)",
+      "Bash(pytest*)",
+      "Bash(go test*)",
+      "Bash(cargo test*)",
+      "Bash(mvn test*)",
+      "Bash(gradle test*)",
+      "Read",
+      "Grep",
+      "Glob"
+    ],
+    "deny": [
+      "Read(./.env)",
+      "Read(./.env.*)",
+      "Bash(rm -rf *)",
+      "Bash(curl *)"
+    ]
+  },
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": ".claude/hooks/session-start.sh"
+          }
+        ]
+      }
+    ]
+  }
+}
