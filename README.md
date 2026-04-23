@@ -1,10 +1,10 @@
-# Claude Kit
+# Claude Devkit
 
-[![npm version](https://img.shields.io/npm/v/claude-kit)](https://www.npmjs.com/package/claude-kit)
-[![npm downloads](https://img.shields.io/npm/dm/claude-kit)](https://www.npmjs.com/package/claude-kit)
-[![License: MIT](https://img.shields.io/npm/l/claude-kit)](LICENSE)
-[![Node.js >=20](https://img.shields.io/node/v/claude-kit)](https://www.npmjs.com/package/claude-kit)
-[![GitHub stars](https://img.shields.io/github/stars/allexcd/claude-kit?style=social)](https://github.com/allexcd/claude-kit)
+[![npm version](https://img.shields.io/npm/v/claude-devkit)](https://www.npmjs.com/package/claude-devkit)
+[![npm downloads](https://img.shields.io/npm/dm/claude-devkit)](https://www.npmjs.com/package/claude-devkit)
+[![License: MIT](https://img.shields.io/npm/l/claude-devkit)](LICENSE)
+[![Node.js >=20](https://img.shields.io/node/v/claude-devkit)](https://www.npmjs.com/package/claude-devkit)
+[![GitHub stars](https://img.shields.io/github/stars/allexcd/claude-devkit?style=social)](https://github.com/allexcd/claude-devkit)
 
 A workflow orchestration kit for Claude Code. Structured rules, agents, skills, and slash commands that make Claude plan before building, verify before closing, and self-improve after corrections.
 
@@ -13,7 +13,7 @@ A workflow orchestration kit for Claude Code. Structured rules, agents, skills, 
 Run this inside your project directory:
 
 ```bash
-npx claude-kit init
+npx claude-devkit init
 ```
 
 Or using the short alias:
@@ -67,14 +67,14 @@ npx cwk init --git-track    # no exclusion — commit the files with the repo
 If you chose `--git-track`, the installer prompts whether to commit immediately. If you are on `main` or `master`, it also suggests creating a feature branch first:
 
 ```
-  Suggested: chore/add-claude-kit
+  Suggested: chore/add-claude-devkit
 ```
 
 To commit manually later:
 
 ```bash
 git add CLAUDE.md .claude/ docs/workflow/ tasks/todo.md tasks/lessons.md .cwk.lock
-git commit -m "chore: add claude workflow kit"
+git commit -m "chore: add claude devkit"
 ```
 
 Non-interactive installs (e.g. CI, piped scripts) default to `--git-exclude` and skip both the commit and `/init` prompts. A tip is printed at the end with manual instructions.
@@ -84,7 +84,7 @@ Non-interactive installs (e.g. CI, piped scripts) default to `--git-exclude` and
 When a new kit version is published:
 
 ```bash
-npx claude-kit@latest update
+npx claude-devkit@latest update
 ```
 
 The update command uses a **file ownership model** to preserve your customizations:
@@ -97,7 +97,7 @@ The update command uses a **file ownership model** to preserve your customizatio
 Preview changes without writing anything:
 
 ```bash
-npx claude-kit@latest update --dry-run
+npx claude-devkit@latest update --dry-run
 ```
 
 ## Uninstall
@@ -140,7 +140,7 @@ Empty directories left behind after file removal are cleaned up automatically. D
 | `cwk uninstall --all` | Also remove user-owned files (full cleanup) |
 | `cwk uninstall --dry-run` | Preview what would be removed without deleting |
 
-`cwk` is an alias for `claude-kit`.
+`cwk` is an alias for `claude-devkit`.
 
 ### Claude Code slash commands
 
