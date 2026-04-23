@@ -1,4 +1,4 @@
-# Claude Workflow Kit
+# Claude Kit
 
 [![npm version](https://img.shields.io/npm/v/claude-kit)](https://www.npmjs.com/package/claude-kit)
 [![npm downloads](https://img.shields.io/npm/dm/claude-kit)](https://www.npmjs.com/package/claude-kit)
