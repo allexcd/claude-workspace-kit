@@ -255,7 +255,7 @@ Shell scripts registered in `.claude/settings.json` that run automatically at de
 - **`.claude/output-styles/`** — output style files applied via `/output-style <name>`. They define rules for response density and format — not auto-loaded, always user-triggered.
 - **`.claude/settings.json`** — defines which tools run without prompting and registers hooks.
 - **`.claude/hooks/session-start.sh`** — runs at the start of every session; surfaces open `tasks/todo.md` items and prior `tasks/lessons.md` corrections so Claude reviews them before new work.
-- **`.claude/hooks/stop.sh`** — runs at the end of every session; reminds about open tasks and prompts for lesson capture if `tasks/lessons.md` is empty.
+- **`.claude/hooks/stop.sh`** — runs when an autonomous task completes (agentic task completion); reminds about open tasks and prompts for lesson capture if `tasks/lessons.md` has no entries.
 - **`tasks/todo.md` + `tasks/lessons.md`** — canonical persisted plan and lesson log.
 - **`~/.claude/projects/<project-slug>/memory/`** — personal cross-session memory, managed by Claude Code outside the repo. Use for user preferences, project context, and references that don't belong committed. Use `tasks/lessons.md` for anything team-shared.
 - **`.cwk.lock`** — written by `npx claude-workspace-kit init`, read by `update` and `uninstall` to know which files are kit-managed vs user-owned.
