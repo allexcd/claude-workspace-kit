@@ -147,14 +147,16 @@ These run inside a Claude Code session (not in the terminal):
 | `/kickoff <task>` | Plan-first task launch — writes a checkable plan to `tasks/todo.md` before any implementation |
 | `/verify-and-close` | Verification checklist before marking a task done — requires concrete proof |
 | `/elegant-fix` | Elegance review of the current implementation — proposes a cleaner solution when something feels hacky |
-| `/output-style terse` | Switch to compact output style |
+| `/review [PR# or branch]` | Review current branch diff or a specified PR — rates confidence and separates blockers from suggestions |
+| `/output-style <terse\|verbose>` | Switch output style for this session |
 
 ## Customizing the Kit
 
 **User-owned files** are yours to modify freely. They are scaffolded once and never touched by `update`:
 
 - `CLAUDE.md` — Add project-specific rules and context (use `/init` to populate automatically)
-- `.claude/rules/backend.md` — Adapt to your language, framework, or coding standards
+- `.claude/rules/backend.md` — Adapt to your backend language, framework, or coding standards
+- `.claude/rules/frontend.md` — Adapt to your frontend framework, styling system, or component patterns
 - `tasks/todo.md`, `tasks/lessons.md` — Used during development for planning and self-improvement
 
 **Kit-managed files** receive upstream improvements automatically. If you need to customize a skill, agent, or command:
@@ -166,17 +168,81 @@ This way your customizations live alongside the kit without conflicts.
 
 ## What's Included
 
+### Agents
+
+Specialist subagents dispatched with the `Agent` tool (`subagent_type: <name>`):
+
+| Agent | Model | Purpose |
+|-------|-------|---------|
+| `deep-reviewer` | Opus | Architecture and quality review — challenges elegance, validates edge cases, requires proof |
+| `fast-implementer` | Sonnet | Executes an approved plan with minimal diff — root-cause fixes only |
+| `codebase-explorer` | Sonnet | Read-only structural exploration — traces call paths, maps dependencies, finds symbol usages |
+
+### Slash Commands
+
+Invoked with `/<name>` inside a Claude Code session:
+
+| Command | Purpose |
+|---------|---------|
+| `/kickoff <task>` | Plan-first task launch — writes a checkable plan to `tasks/todo.md` before any implementation |
+| `/verify-and-close` | Verification checklist — requires concrete proof before closing a task |
+| `/elegant-fix` | Elegance review — proposes a cleaner solution when the current fix feels hacky |
+| `/review [PR# or branch]` | Code review — rates confidence and separates blockers from suggestions |
+| `/output-style <terse\|verbose>` | Switch output style for this session |
+
+### Auto-Invoked Skills
+
+Triggered automatically when Claude judges the task description matches — no slash command needed:
+
+| Skill | When it fires |
+|-------|--------------|
+| `plan-mode` | Any task with 3+ steps or architectural decisions |
+| `verification` | Before marking any task complete |
+| `demand-elegance` | When a fix or implementation feels non-obvious |
+| `self-improvement` | After any user correction |
+| `subagent-strategy` | When research or parallel analysis would clutter main context |
+| `autonomous-bug-fixing` | When given a bug report, failing test, or error log |
+
+### Rules
+
+Path-scoped instruction files loaded automatically when Claude works on matching files:
+
+| Rule file | Paths covered | Purpose |
+|-----------|--------------|---------|
+| `.claude/rules/backend.md` | `*.ts`, `*.js`, `*.py`, `*.go`, `*.java`, `*.cs`, `*.rb`, `*.rs` | General code quality — root-cause fixes, minimal diffs, test-driven verification |
+| `.claude/rules/frontend.md` | `*.tsx`, `*.jsx`, `*.vue`, `*.svelte`, `*.css`, `*.scss`, `*.html` | Frontend standards — component responsibility, accessibility, CSS, performance |
+
+### Output Styles
+
+Switched with `/output-style <name>`:
+
+| Style | When to use |
+|-------|------------|
+| `terse` | Default — compact, high-signal. No preambles, code diffs over prose |
+| `verbose` | Architecture reviews, onboarding, explaining unfamiliar code — full reasoning shown |
+
+### Hooks
+
+Shell scripts registered in `settings.json` that run automatically:
+
+| Hook | Event | Purpose |
+|------|-------|---------|
+| `session-start.sh` | Session start | Surfaces open `tasks/todo.md` items and prior `tasks/lessons.md` lessons |
+| `stop.sh` | Session end | Reminds about open tasks and uncaptured lessons |
+
+### File Ownership
+
 | Category | Files | Ownership |
 |---|---|---|
 | Workflow rules | `docs/workflow/workflow-orchestration.md` | Kit-managed |
 | Root instructions | `CLAUDE.md` | User-owned |
-| Path-scoped rules | `.claude/rules/backend.md` | User-owned |
-| Agents | `.claude/agents/deep-reviewer.md`, `.claude/agents/fast-implementer.md` | Kit-managed |
-| Slash commands | `.claude/commands/kickoff.md`, `.claude/commands/verify-and-close.md`, `.claude/commands/elegant-fix.md` | Kit-managed |
-| Skills | `.claude/skills/{autonomous-bug-fixing,demand-elegance,plan-mode,self-improvement,subagent-strategy,verification}/SKILL.md` | Kit-managed |
+| Path-scoped rules | `.claude/rules/backend.md`, `.claude/rules/frontend.md` | User-owned |
+| Agents | `.claude/agents/*.md` | Kit-managed |
+| Slash commands | `.claude/commands/*.md` | Kit-managed |
+| Skills | `.claude/skills/*/SKILL.md` | Kit-managed |
 | Settings | `.claude/settings.json` | Kit-managed |
-| Hooks | `.claude/hooks/session-start.sh` | Kit-managed |
-| Output style | `.claude/output-styles/terse.md` | Kit-managed |
+| Hooks | `.claude/hooks/*.sh` | Kit-managed |
+| Output styles | `.claude/output-styles/*.md` | Kit-managed |
 | Task tracking | `tasks/todo.md`, `tasks/lessons.md` | User-owned |
 | Memory | `~/.claude/projects/<project-slug>/memory/` | Outside repo — auto-loaded by Claude Code |
 | Lock file | `.cwk.lock` | Kit-managed |
@@ -184,12 +250,14 @@ This way your customizations live alongside the kit without conflicts.
 ## How It Fits Together
 
 - **`CLAUDE.md`** — loaded into every Claude Code session as system context.
-- **`.claude/rules/backend.md`** — loaded only when Claude is working on files matching the `paths:` globs.
+- **`.claude/rules/`** — loaded only when Claude works on files matching the `paths:` globs in each rule file. Multiple rules can match the same file (e.g. both `backend.md` and `frontend.md` apply to `.tsx` files).
 - **`.claude/agents/`** — subagents callable via the Agent tool (`subagent_type: deep-reviewer`).
 - **`.claude/commands/`** — slash commands invokable with `/<name>` (e.g. `/kickoff Add OAuth`).
-- **`.claude/skills/`** — auto-invoked when Claude judges the description matches the task.
-- **`.claude/settings.json`** — defines which tools run without prompting and registers the SessionStart hook.
-- **`.claude/hooks/session-start.sh`** — runs at the start of every session; surfaces open `tasks/todo.md` items and prior `tasks/lessons.md` corrections so Claude reviews them before starting new work.
+- **`.claude/skills/`** — auto-invoked when Claude judges the task description matches the skill.
+- **`.claude/output-styles/`** — output style files applied via `/output-style <name>`. They define rules for response density and format — not auto-loaded, always user-triggered.
+- **`.claude/settings.json`** — defines which tools run without prompting and registers hooks.
+- **`.claude/hooks/session-start.sh`** — runs at the start of every session; surfaces open `tasks/todo.md` items and prior `tasks/lessons.md` corrections so Claude reviews them before new work.
+- **`.claude/hooks/stop.sh`** — runs at the end of every session; reminds about open tasks and prompts for lesson capture if `tasks/lessons.md` is empty.
 - **`tasks/todo.md` + `tasks/lessons.md`** — canonical persisted plan and lesson log.
 - **`~/.claude/projects/<project-slug>/memory/`** — personal cross-session memory, managed by Claude Code outside the repo. Use for user preferences, project context, and references that don't belong committed. Use `tasks/lessons.md` for anything team-shared.
 - **`.cwk.lock`** — written by `npx claude-workspace-kit init`, read by `update` and `uninstall` to know which files are kit-managed vs user-owned.
