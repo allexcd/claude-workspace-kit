@@ -86,7 +86,7 @@ The update command uses a **file ownership model** to preserve your customizatio
 
 | Tier | Behavior | Files |
 |------|----------|-------|
-| **Kit-managed** | Auto-updated to latest version | Skills, agents, commands, hooks, settings, workflow docs |
+| **Kit-managed** | Auto-updated to latest version | Skills, agents, commands, rules, hooks, settings, output styles, workflow docs |
 | **User-owned** | Never overwritten by update | `CLAUDE.md`, `tasks/todo.md`, `tasks/lessons.md` |
 
 Preview changes without writing anything:
@@ -147,36 +147,100 @@ These run inside a Claude Code session (not in the terminal):
 | `/kickoff <task>` | Plan-first task launch — writes a checkable plan to `tasks/todo.md` before any implementation |
 | `/verify-and-close` | Verification checklist before marking a task done — requires concrete proof |
 | `/elegant-fix` | Elegance review of the current implementation — proposes a cleaner solution when something feels hacky |
-| `/output-style terse` | Switch to compact output style |
+| `/review [PR# or branch]` | Review current branch diff or a specified PR — rates confidence and separates blockers from suggestions |
+| `/output-style <terse\|verbose>` | Switch output style for this session |
 
 ## Customizing the Kit
 
 **User-owned files** are yours to modify freely. They are scaffolded once and never touched by `update`:
 
 - `CLAUDE.md` — Add project-specific rules and context (use `/init` to populate automatically)
-- `.claude/rules/backend.md` — Adapt to your language, framework, or coding standards
 - `tasks/todo.md`, `tasks/lessons.md` — Used during development for planning and self-improvement
 
-**Kit-managed files** receive upstream improvements automatically. If you need to customize a skill, agent, or command:
+**Kit-managed files** receive upstream improvements automatically on `cwk update`. If you need to customize a skill, agent, command, or rule:
 
-1. Create a *new* file alongside the kit version (e.g., `.claude/skills/my-custom-skill/SKILL.md`)
-2. Leave kit-managed originals untouched so `update` continues to work
+1. Create a *new* file alongside the kit version — e.g., `.claude/skills/my-workflow/SKILL.md` or `.claude/rules/my-project.md`
+2. Leave kit-managed originals untouched so `update` continues to deliver improvements
 
 This way your customizations live alongside the kit without conflicts.
 
 ## What's Included
 
+### Agents
+
+Specialist subagents dispatched with the `Agent` tool (`subagent_type: <name>`). Each runs in its own context window so it doesn't pollute the main conversation:
+
+| Agent | Model | When to use | What it does |
+|-------|-------|-------------|--------------|
+| `deep-reviewer` | Opus | Before merging a non-trivial change or when an implementation feels uncertain | Reads the diff, challenges design choices, validates edge cases, and requires concrete proof (tests, logs, diffs) before approving — never rubber-stamps |
+| `fast-implementer` | Sonnet | Once a plan is approved and ready to execute | Applies the plan with the smallest possible diff; fixes root causes only; verifies with tests or build output before reporting done |
+| `codebase-explorer` | Sonnet | When mapping unfamiliar code or tracing where a symbol is defined and used | Read-only exploration — traces call paths, maps module dependencies, and finds all usages of a symbol without touching any files |
+
+### Slash Commands
+
+Invoked with `/<name>` inside a Claude Code session. Arguments are optional unless marked required:
+
+| Command | What it does |
+|---------|-------------|
+| `/kickoff <task>` | Breaks the task into checkable steps, writes a plan to `tasks/todo.md` with a verification section, and presents it for approval — no code is written until the plan is confirmed |
+| `/verify-and-close` | Runs tests, lint, and build; diffs behavior against the base branch; documents evidence in `tasks/todo.md`; blocks closure until proof is provided |
+| `/elegant-fix` | Reviews the current implementation and asks "is there a more elegant way?" — proposes a cleaner solution when the answer is yes, skips the critique for simple obvious fixes |
+| `/review [PR# or branch]` | Gets the diff (via `gh pr diff` for a PR number, or `git diff` for a branch), assesses correctness, security, quality, and test coverage, then outputs a confidence rating with blocking issues separated from suggestions |
+| `/output-style <terse\|verbose>` | Reads the named style file (`.claude/output-styles/<name>.md`) and applies its response density and format rules for the rest of the session |
+
+### Auto-Invoked Skills
+
+Skills trigger automatically when Claude judges the task description matches — no slash command needed. They implement the core workflow disciplines from `docs/workflow/workflow-orchestration.md`:
+
+| Skill | Triggers when | What it does |
+|-------|--------------|--------------|
+| `plan-mode` | Task has 3+ steps or involves an architectural decision | Writes a checkable plan to `tasks/todo.md` (steps + verification section) and presents it for approval before any code is written |
+| `verification` | About to mark a task complete | Runs tests, lint, and build; diffs behavior; requires concrete evidence — never marks done by assertion alone |
+| `demand-elegance` | A fix or implementation feels non-obvious or potentially hacky | Pauses to ask "is there a more elegant way?" and proposes a cleaner solution when warranted; skips for simple, obvious changes |
+| `self-improvement` | After any user correction | Captures the mistake and a prevention rule in `tasks/lessons.md` so the same error is not repeated in future sessions |
+| `subagent-strategy` | Research or parallel analysis would flood the main context window | Delegates work to specialist subagents and returns focused summaries; keeps the main session lean |
+| `autonomous-bug-fixing` | Given a bug report, failing test, or error log | Diagnoses root cause, implements a minimal fix, and verifies without asking for hand-holding or context switching from the user |
+
+### Rules
+
+Path-scoped instruction files loaded automatically when Claude is working on matching files. Multiple rules can apply to the same file (e.g. both `backend.md` and `frontend.md` load for `.tsx` files):
+
+| Rule file | Paths | What it enforces |
+|-----------|-------|-----------------|
+| `.claude/rules/backend.md` | `*.ts`, `*.js`, `*.py`, `*.go`, `*.java`, `*.cs`, `*.rb`, `*.rs` | Root-cause fixes only; minimal diffs; verify with tests, lint, and build before done; follow existing code style |
+| `.claude/rules/frontend.md` | `*.tsx`, `*.jsx`, `*.vue`, `*.svelte`, `*.css`, `*.scss`, `*.html` | Single-responsibility components; semantic HTML before ARIA; no inline styles; CSS variables over magic numbers; no preemptive memoization; keyboard accessibility |
+
+### Output Styles
+
+Activated with `/output-style <name>`. Styles are never auto-loaded — always user-triggered for the current session:
+
+| Style | Best for | What changes |
+|-------|---------|--------------|
+| `terse` | Fast iteration, experienced users who know the codebase | No preambles or summaries; code diffs over prose; single-sentence status updates |
+| `verbose` | Architecture reviews, onboarding, or explaining unfamiliar code | Reasoning shown before conclusions; step-by-step breakdowns; trade-offs and rejected alternatives surfaced |
+
+### Hooks
+
+Shell scripts registered in `.claude/settings.json` that run automatically at defined points in a session:
+
+| Hook | Event | What it does |
+|------|-------|--------------|
+| `session-start.sh` | Start of every session | Reads `tasks/lessons.md` and `tasks/todo.md`; prints prior correction rules and open checklist items so Claude reviews them before starting new work |
+| `stop.sh` | Agentic task completion | Prints any remaining open `tasks/todo.md` items; reminds to capture corrections in `tasks/lessons.md` if the file has no entries |
+
+### File Ownership
+
 | Category | Files | Ownership |
 |---|---|---|
 | Workflow rules | `docs/workflow/workflow-orchestration.md` | Kit-managed |
 | Root instructions | `CLAUDE.md` | User-owned |
-| Path-scoped rules | `.claude/rules/backend.md` | User-owned |
-| Agents | `.claude/agents/deep-reviewer.md`, `.claude/agents/fast-implementer.md` | Kit-managed |
-| Slash commands | `.claude/commands/kickoff.md`, `.claude/commands/verify-and-close.md`, `.claude/commands/elegant-fix.md` | Kit-managed |
-| Skills | `.claude/skills/{autonomous-bug-fixing,demand-elegance,plan-mode,self-improvement,subagent-strategy,verification}/SKILL.md` | Kit-managed |
+| Path-scoped rules | `.claude/rules/backend.md`, `.claude/rules/frontend.md` | Kit-managed |
+| Agents | `.claude/agents/*.md` | Kit-managed |
+| Slash commands | `.claude/commands/*.md` | Kit-managed |
+| Skills | `.claude/skills/*/SKILL.md` | Kit-managed |
 | Settings | `.claude/settings.json` | Kit-managed |
-| Hooks | `.claude/hooks/session-start.sh` | Kit-managed |
-| Output style | `.claude/output-styles/terse.md` | Kit-managed |
+| Hooks | `.claude/hooks/*.sh` | Kit-managed |
+| Output styles | `.claude/output-styles/*.md` | Kit-managed |
 | Task tracking | `tasks/todo.md`, `tasks/lessons.md` | User-owned |
 | Memory | `~/.claude/projects/<project-slug>/memory/` | Outside repo — auto-loaded by Claude Code |
 | Lock file | `.cwk.lock` | Kit-managed |
@@ -184,12 +248,14 @@ This way your customizations live alongside the kit without conflicts.
 ## How It Fits Together
 
 - **`CLAUDE.md`** — loaded into every Claude Code session as system context.
-- **`.claude/rules/backend.md`** — loaded only when Claude is working on files matching the `paths:` globs.
+- **`.claude/rules/`** — loaded only when Claude works on files matching the `paths:` globs in each rule file. Multiple rules can match the same file (e.g. both `backend.md` and `frontend.md` apply to `.tsx` files).
 - **`.claude/agents/`** — subagents callable via the Agent tool (`subagent_type: deep-reviewer`).
 - **`.claude/commands/`** — slash commands invokable with `/<name>` (e.g. `/kickoff Add OAuth`).
-- **`.claude/skills/`** — auto-invoked when Claude judges the description matches the task.
-- **`.claude/settings.json`** — defines which tools run without prompting and registers the SessionStart hook.
-- **`.claude/hooks/session-start.sh`** — runs at the start of every session; surfaces open `tasks/todo.md` items and prior `tasks/lessons.md` corrections so Claude reviews them before starting new work.
+- **`.claude/skills/`** — auto-invoked when Claude judges the task description matches the skill.
+- **`.claude/output-styles/`** — output style files applied via `/output-style <name>`. They define rules for response density and format — not auto-loaded, always user-triggered.
+- **`.claude/settings.json`** — defines which tools run without prompting and registers hooks.
+- **`.claude/hooks/session-start.sh`** — runs at the start of every session; surfaces open `tasks/todo.md` items and prior `tasks/lessons.md` corrections so Claude reviews them before new work.
+- **`.claude/hooks/stop.sh`** — runs when an autonomous task completes (agentic task completion); reminds about open tasks and prompts for lesson capture if `tasks/lessons.md` has no entries.
 - **`tasks/todo.md` + `tasks/lessons.md`** — canonical persisted plan and lesson log.
 - **`~/.claude/projects/<project-slug>/memory/`** — personal cross-session memory, managed by Claude Code outside the repo. Use for user preferences, project context, and references that don't belong committed. Use `tasks/lessons.md` for anything team-shared.
 - **`.cwk.lock`** — written by `npx claude-workspace-kit init`, read by `update` and `uninstall` to know which files are kit-managed vs user-owned.

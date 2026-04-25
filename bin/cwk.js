@@ -16,9 +16,12 @@ const MANAGED_FILES = [
   '.claude/settings.json',
   '.claude/agents/deep-reviewer.md',
   '.claude/agents/fast-implementer.md',
+  '.claude/agents/codebase-explorer.md',
   '.claude/commands/kickoff.md',
   '.claude/commands/verify-and-close.md',
   '.claude/commands/elegant-fix.md',
+  '.claude/commands/output-style.md',
+  '.claude/commands/review.md',
   '.claude/skills/autonomous-bug-fixing/SKILL.md',
   '.claude/skills/demand-elegance/SKILL.md',
   '.claude/skills/plan-mode/SKILL.md',
@@ -26,8 +29,11 @@ const MANAGED_FILES = [
   '.claude/skills/subagent-strategy/SKILL.md',
   '.claude/skills/verification/SKILL.md',
   '.claude/rules/backend.md',
+  '.claude/rules/frontend.md',
   '.claude/output-styles/terse.md',
+  '.claude/output-styles/verbose.md',
   '.claude/hooks/session-start.sh',
+  '.claude/hooks/stop.sh',
   'docs/workflow/workflow-orchestration.md',
 ];
 
@@ -140,8 +146,10 @@ function cmdUpdate(args) {
 
   if (!dryRun) {
     updateLock(lock);
-    const hook = path.join(TARGET_DIR, '.claude/hooks/session-start.sh');
-    if (fs.existsSync(hook)) {fs.chmodSync(hook, 0o755);}
+    for (const hookFile of ['.claude/hooks/session-start.sh', '.claude/hooks/stop.sh']) {
+      const hook = path.join(TARGET_DIR, hookFile);
+      if (fs.existsSync(hook)) {fs.chmodSync(hook, 0o755);}
+    }
     console.log(`\n  Updated ${changed} file${changed !== 1 ? 's' : ''} (${unchanged} already current).\n`);
   } else if (changed === 0) {
     console.log('  All kit files are up to date.\n');
